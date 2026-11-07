@@ -1,0 +1,14 @@
+.env
+*.env
+!.env.example
+*.db
+*.db.gz
+*.log
+state/
+# Instance files belong in ~/.config/curated-digest, not here.
+/tasks/
+__pycache__/
+*.pyc
+.venv/
+# Personal identifier denylist for scripts/scan_identifiers.py. Never commit.
+.identifiers.local

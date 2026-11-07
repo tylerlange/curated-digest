@@ -1,0 +1,56 @@
+# Template: one digest across several subreddits, over OAuth. Copy with
+# `curated-digest init --task multi-subreddit --id <your-id>`.
+#
+# Sorted by top-of-week, not new: the ten newest posts on a busy subreddit are
+# almost entirely questions and chatter, so /new samples the worst content
+# available. Upvotes are a free first pass.
+#
+# Unauthenticated .rss returns 200 once then 429s for the next several
+# requests, which a multi-subreddit digest cannot live inside. Credentials go
+# in reddit.env, outside the repo (see .env.example).
+#
+# Before the first real run: replace the subreddits with your own and rewrite
+# every REWRITE: line in `criteria`.
+id: multi-subreddit
+source:
+  - {type: reddit, url: "https://www.reddit.com/r/commandline/top/?t=week", id: commandline}
+  - {type: reddit, url: "https://www.reddit.com/r/selfhosted/top/?t=week", id: selfhosted}
+  - {type: reddit, url: "https://www.reddit.com/r/linux/top/?t=week", id: linux}
+criteria: |
+  REWRITE: who the reader is and what they want from these communities, e.g.
+  "The reader maintains a few Linux machines and wants things they can USE."
+  Reddit's default output is enthusiasm, and enthusiasm is not a tip.
+
+  Keep only posts carrying transferable, specific knowledge:
+  - a concrete configuration change with a stated before/after effect
+  - a tool or setting that is genuinely useful and non-obvious, with what it
+    actually does
+  - a fix or workaround for a named, reproducible problem
+
+  REWRITE (keep or adjust): CUT, without exception:
+  - "look at my setup" showcases and screenshots
+  - polls, "what do you think", "am I the only one", which-should-I-buy
+  - rumours, leaks, speculation, release-date chatter, pricing
+  - complaints and rants with no fix attached
+  - anything whose value is emotional rather than transferable
+
+  IMPORTANT: where the tip actually lives. Each item includes the post plus
+  its top comments. On Reddit the post is often a photo or a one-line prompt,
+  and the useful content is entirely in the replies. Judge the WHOLE item,
+  including comments. A photo post whose comments contain a specific,
+  transferable tip is a KEEP, and the line you write comes from the tip, not
+  from the post title.
+
+  A post is only worth a line if the tip can be stated in that line. If, after
+  reading the comments, you still cannot state something specific and
+  transferable, cut it.
+schedule: every 6h
+model: gemini:gemini-3.7-flash
+renderer: telegram
+channel: telegram
+urgency: digest
+heading: "Reddit · {date}"
+prefilter:
+  max_age_days: 7
+  exclude: []
+  include: []

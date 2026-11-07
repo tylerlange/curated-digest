@@ -1,0 +1,27 @@
+[Unit]
+Description=curated-digest harness tick (reconcile, sweep, claim one unit)
+# network-online.target does not exist in the systemd *user* manager; declaring
+# it here is a dangling no-op. If ticks fail at boot before DNS is up, add an
+# ExecStartPre that waits for name resolution (R41).
+
+[Service]
+Type=oneshot
+# Example unit. Copy to ~/.config/systemd/user/, edit the paths if the repo is
+# not at ~/curated-digest (%h is your home directory), then
+# `systemctl --user enable --now curated-digest-tick.timer` and
+# `loginctl enable-linger $USER` so it runs while you are logged out.
+# Instance config and state come from the defaults (~/.config/curated-digest,
+# ~/.local/state/curated-digest) or Environment= lines here.
+WorkingDirectory=%h/curated-digest
+# Queue units for any task that is due, then execute one. Ordering matters:
+# dispatch is cheap and makes no model call, so a due task is always queued
+# even if the harness is currently rate-limited and cannot run it yet.
+ExecStart=%h/curated-digest/bin/curated-digest dispatch
+ExecStart=%h/curated-digest/bin/curated-digest run
+# R39: last, so it observes the state the tick just produced. A clean report
+# pings the external watchdog; a dirty one alerts instead and deliberately
+# does NOT ping, so the watchdog fires too if curated-digest is too broken to alert.
+ExecStart=%h/curated-digest/bin/curated-digest health --notify
+TimeoutStartSec=3600
+# H15: a tick is one bounded action. If it wedges, kill it — the ledger row is
+# left `running` and the next tick reconciles it (H4).

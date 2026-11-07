@@ -1,0 +1,34 @@
+# Template: watch one product changelog and report only what changes what you
+# do. Copy with `curated-digest init --task changelog-watch --id <your-id>`.
+#
+# Before the first real run: point `url` at the changelog you care about, and
+# rewrite every REWRITE: line in `criteria` in your own words. The criteria
+# are the whole product; a vague one produces a vague digest.
+id: changelog-watch
+source:
+  type: rss
+  # Any RSS/Atom changelog. This one is a real, public, frequently updated feed.
+  url: https://code.visualstudio.com/feed.xml
+criteria: |
+  REWRITE: who the reader is and how they use the product, e.g. "The reader
+  uses this tool daily for personal projects and automates parts of it."
+
+  Tier "act" if the reader would plausibly change something this week: a
+  setting to turn on, a flag or default that changed, a feature that replaces
+  something they built by hand, or a fix for a problem they have.
+
+  Tier "fyi" for capabilities worth knowing about but needing no action today.
+
+  REWRITE: what to cut entirely, e.g. enterprise/admin features, platforms
+  the reader does not use, pure marketing.
+schedule: every 6h
+model: gemini:gemini-3.7-flash
+renderer: telegram
+channel: telegram
+urgency: digest
+heading: "Changelog · {date}"
+link: https://code.visualstudio.com/updates
+prefilter:
+  max_age_days: 21
+  exclude: []
+  include: []

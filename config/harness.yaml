@@ -1,0 +1,37 @@
+# Harness config. H8: rate-limit signatures live here because "detect a rate
+# limit" is unfalsifiable without them. Add a signature when a new wording
+# appears; never widen these into substring soup that swallows real errors.
+
+rate_limit:
+  # Matched case-insensitively against combined stdout+stderr, after
+  # normalising curly apostrophes to straight ones.
+  signatures:
+    five_hour:
+      - "you've hit your session limit"
+      - "claude usage limit reached"     # legacy wording
+    weekly:
+      - "you've hit your weekly limit"
+    opus:
+      - "you've hit your opus limit"
+
+  # H8: a different class of failure. These are real errors and must NOT be
+  # classified as rate limits, even if a signature above also matches.
+  not_rate_limit:
+    - "api error:"
+    - "http 429"
+    - "http 529"
+
+  # H10: used only when neither the sidecar nor the error text yields a reset
+  # time. Deliberately short — a re-check that hits the limit again is cheap
+  # and does not consume a retry (H9).
+  fallback_wait_seconds: 3600
+
+  # Optional sidecar (tools/build-loop/statusline-sidecar). Ignored if older than this.
+  sidecar_max_age_seconds: 900
+
+retry:
+  max_attempts: 3            # H6
+  stuck_after_rate_limited_seconds: 86400   # H14: 24h
+
+spend:
+  ceiling_usd_per_run: 10.0  # H19 / D26

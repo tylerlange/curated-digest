@@ -1,0 +1,85 @@
+#!/usr/bin/env bash
+# One headless build turn.
+#
+# Build tooling, not product: how this repo was built with a coding agent.
+# See tools/README.md and tools/PLAYBOOK.md.
+#
+# Without this file the harness was ceremonial: when a usage window ran out
+# mid-build, scheduled tasks resumed on their own and the build did not, so a
+# human had to type "continue", the one thing docs/HARNESS.md says never
+# happens.
+#
+# The loop: take the first unchecked item in NEXT.md, do it, run the tests,
+# commit, tick the box, stop. The harness owns everything else — one item per
+# unit, a commit as the only proof of progress (H5), rate limits as a yield
+# rather than a failure (H9), and automatic resume on the next tick (H13).
+set -uo pipefail
+
+HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+REPO="$(cd "$HERE/../.." && pwd)"
+QUEUE="${CURATED_DIGEST_QUEUE:-$HERE/NEXT.md}"
+MODEL="${CURATED_DIGEST_BUILD_MODEL:-claude-opus-5}"
+# Measured: the default system prompt loaded ~50KB of instructions and memory,
+# costing ~28k cache-creation tokens on a turn that returned one word. On an
+# autonomous loop that is a fixed tax per work item. CURATED_DIGEST_BUILD_SLIM=1 swaps it
+# for a distilled house-style brief so the trade can be measured rather than
+# guessed at.
+SLIM="${CURATED_DIGEST_BUILD_SLIM:-0}"
+STYLE="$HERE/house-style.md"
+
+[[ -f "$QUEUE" ]] || { echo "no queue at $QUEUE" >&2; exit 0; }
+
+# Nothing left to do is success, not failure. Exiting non-zero here would burn
+# retries and eventually mark a finished queue as stuck.
+if ! grep -q '^- \[ \]' "$QUEUE"; then
+    echo "queue empty: nothing to build"
+    exit 0
+fi
+
+PROMPT="$(mktemp)"
+trap 'rm -f "$PROMPT"' EXIT
+
+cat > "$PROMPT" <<PROMPTEOF
+You are continuing an unattended build of curated-digest, in $REPO. No human is watching.
+Read AGENTS.md, README.md, then docs/DECISIONS.md, before changing anything.
+
+Do EXACTLY ONE thing: the first unchecked item in $QUEUE, reproduced here.
+
+$(cat "$QUEUE")
+
+Rules, in order of importance:
+
+1. One item. Do not start the next one, however small it looks. The harness
+   gives you another turn.
+2. Finish it completely or leave the tree untouched. A unit only counts when it
+   is committed and the tree is clean, so a half-done item is worse than an
+   untouched one.
+3. Tests are the definition of done. Add a test that fails if the behaviour
+   regresses, then run: make check
+   It must pass. If you cannot make it pass, revert your changes, write
+   what blocked you under the item in the queue file, and commit only that.
+4. Match the house style exactly: dense comments explaining WHY, naming the
+   failure a line prevents. Read a neighbouring module first.
+5. Commit with a real message, and change '- [ ]' to '- [x]' for the item in
+   the same commit. Sign off with:
+   Co-Authored-By: Claude <noreply@anthropic.com>
+6. Do not relitigate anything in docs/DECISIONS.md. If an item conflicts with a
+   decision, leave it unchecked and note the conflict.
+7. Never touch anything outside $REPO.
+PROMPTEOF
+
+# Trusted input: this prompt is ours, not the internet's, so unlike curation
+# this turn legitimately needs tools. The boundary is CLAUDE_CONFINE_ROOTS,
+# which the harness runner sets to the job's cwd plus the state dir, enforced
+# by a PreToolUse hook you supply rather than by the model agreeing to behave.
+EXTRA=()
+if [[ "$SLIM" == "1" && -f "$STYLE" ]]; then
+    EXTRA+=(--system-prompt "$(cat "$STYLE")")
+fi
+
+exec "$HERE/curated-digest-claude" "$PROMPT" -- \
+    --model "$MODEL" \
+    "${EXTRA[@]}" \
+    --permission-mode acceptEdits \
+    --allowed-tools "Read,Write,Edit,Glob,Grep,Bash" \
+    --add-dir "$REPO"

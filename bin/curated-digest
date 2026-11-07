@@ -1,0 +1,4 @@
+#!/usr/bin/env bash
+# Entry point. Keeps PYTHONPATH pinned to the repo so there is nothing to install.
+set -euo pipefail
+exec python3 -c 'import sys,os; sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.realpath("'"${BASH_SOURCE[0]}"'")))); from curated_digest.cli import main; sys.exit(main())' "$@"

@@ -1,0 +1,29 @@
+# Template: any RSS or Atom feed (a blog, a news section, a release feed).
+# Copy with `curated-digest init --task rss-generic --id <your-id>`.
+#
+# Before the first real run: set `url`, `heading` and `link`, and rewrite every
+# REWRITE: line in `criteria`. Several feeds can share one digest: make
+# `source` a list of {type, url, id} entries, as in multi-subreddit.yaml.
+id: rss-generic
+source:
+  type: rss
+  url: https://example.org/feed.xml   # REWRITE: your feed
+criteria: |
+  REWRITE: who the reader is, in one or two sentences.
+
+  REWRITE: what earns tier "act" (worth doing something about soon).
+
+  REWRITE: what earns tier "fyi" (worth knowing, no action needed).
+
+  REWRITE: what to cut entirely. Be specific; anything not cut is a candidate.
+schedule: daily at 07:00
+model: gemini:gemini-3.7-flash
+renderer: telegram
+channel: telegram
+urgency: digest
+heading: "Feed · {date}"
+# link: https://example.org/   # optional footer link (single-source tasks only)
+prefilter:
+  max_age_days: 7
+  exclude: []
+  include: []

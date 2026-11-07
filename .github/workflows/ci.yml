@@ -1,0 +1,16 @@
+name: ci
+on: [push, pull_request]
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install PyYAML
+        run: python -m pip install pyyaml
+      # Same command as local: unit tests, behaviour checks, build-tooling
+      # tests, identifier scan. The personal denylist is git-ignored, so CI
+      # runs the built-in patterns only.
+      - run: make check

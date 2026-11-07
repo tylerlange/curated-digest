@@ -1,0 +1,53 @@
+#!/usr/bin/env bash
+# Build tooling (see tools/README.md). Run a headless Claude turn as a harness job and report the outcome
+# structurally, so the runner never has to guess (H8, H19).
+#
+#   curated-digest-claude <prompt-file> [-- extra claude args...]
+#
+# Writes $CURATED_DIGEST_RESULT as JSON: {outcome, cost_usd, limit_kind, resume_after, error}
+set -uo pipefail
+
+PROMPT_FILE="${1:?usage: curated-digest-claude <prompt-file> [-- extra claude args]}"; shift || true
+[[ "${1:-}" == "--" ]] && shift
+
+RESULT="${CURATED_DIGEST_RESULT:-/dev/null}"
+CEILING="${CURATED_DIGEST_SPEND_CEILING_USD:-10}"
+
+emit() { printf '%s\n' "$1" > "$RESULT"; }
+
+# --allowedTools and friends are variadic: a following positional prompt gets
+# swallowed. The prompt always goes in on stdin.
+raw="$(claude -p --output-format json "$@" < "$PROMPT_FILE" 2>&1)"
+rc=$?
+
+cost="$(printf '%s' "$raw" | python3 -c '
+import json,sys
+try: print(json.loads(sys.stdin.read()).get("total_cost_usd") or 0)
+except Exception: print(0)
+')"
+
+if [[ $rc -ne 0 ]]; then
+  verdict="$(printf '%s' "$raw" | python3 -c '
+import json,os,sys
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.realpath("'"${BASH_SOURCE[0]}"'")))))
+from curated_digest import ratelimit
+v = ratelimit.classify(sys.stdin.read())
+print(json.dumps({"outcome":"rate_limited","limit_kind":v.kind,"resume_after":v.resume_after}
+                 if v.is_rate_limit else {"outcome":"error"}))
+')"
+  emit "$(python3 -c '
+import json,sys
+d=json.loads(sys.argv[1]); d["cost_usd"]=float(sys.argv[2]); d["error"]=sys.argv[3][-2000:]
+print(json.dumps(d))' "$verdict" "$cost" "$raw")"
+  printf '%s\n' "$raw" >&2
+  exit $rc
+fi
+
+emit "$(python3 -c 'import json,sys; print(json.dumps({"outcome":"ok","cost_usd":float(sys.argv[1])}))' "$cost")"
+printf '%s' "$raw"
+
+# H19: report an overrun rather than silently continuing. The runner decides.
+python3 -c 'import sys; sys.exit(0 if float(sys.argv[1]) <= float(sys.argv[2]) else 3)' "$cost" "$CEILING" || {
+  echo "curated-digest-claude: spend ceiling exceeded (\$$cost > \$$CEILING)" >&2
+}
+exit 0

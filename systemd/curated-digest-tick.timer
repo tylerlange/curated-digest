@@ -1,0 +1,14 @@
+[Unit]
+Description=curated-digest harness tick every 10 minutes
+
+[Timer]
+OnBootSec=3min
+OnUnitActiveSec=10min
+# R25: the tick interval bounds urgent delivery latency.
+AccuracySec=30s
+Persistent=false
+# H13: this timer IS the resume mechanism. A rate-limited unit records when its
+# window reopens and exits; the next tick reclaims it with no human involved.
+
+[Install]
+WantedBy=timers.target

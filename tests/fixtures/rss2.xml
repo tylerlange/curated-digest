@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0" xmlns:content="http://purl.org/rss/1.0/modules/content/">
+  <channel>
+    <title>Example Feed</title>
+    <link>https://example.com/</link>
+    <description>An example feed</description>
+    <item>
+      <title>First &amp; Only Post</title>
+      <link>https://example.com/posts/1</link>
+      <guid>urn:uuid:abc-123</guid>
+      <pubDate>Mon, 12 Jan 2026 08:30:00 GMT</pubDate>
+      <description><![CDATA[<p>Hello &amp; welcome to <b>the</b> post.</p>]]></description>
+    </item>
+    <item>
+      <title>Second Post</title>
+      <link>https://example.com/posts/2</link>
+      <pubDate>garbage not a date</pubDate>
+      <content:encoded><![CDATA[<div>Full body   with   extra   spaces.</div>]]></content:encoded>
+      <description>Teaser only, should be ignored.</description>
+    </item>
+  </channel>
+</rss>

@@ -1,0 +1,22 @@
+#!/usr/bin/env bash
+# Claude Code passes statusline JSON on stdin, which is the only place
+# `rate_limits.five_hour.resets_at` is exposed. Park it where the harness can
+# read it (H10), then print a normal statusline.
+#
+# Build tooling (see tools/README.md). Optional: without it the harness parses
+# reset times from the error text, else waits a fixed interval.
+# Wire up in ~/.claude/settings.json:
+#   "statusLine": {"type": "command", "command": "/path/to/curated-digest/tools/build-loop/statusline-sidecar"}
+set -euo pipefail
+STATE="${CURATED_DIGEST_STATE_DIR:-${XDG_STATE_HOME:-$HOME/.local/state}/curated-digest}"
+mkdir -p "$STATE"
+input="$(cat)"
+printf '%s' "$input" > "$STATE/ratelimit.json.tmp" && mv "$STATE/ratelimit.json.tmp" "$STATE/ratelimit.json"
+printf '%s' "$input" | python3 -c '
+import json,sys
+try:
+    d = json.load(sys.stdin)
+    print(f"{d.get(\"model\",{}).get(\"display_name\",\"\")} {d.get(\"workspace\",{}).get(\"current_dir\",\"\")}".strip())
+except Exception:
+    print("")
+'
