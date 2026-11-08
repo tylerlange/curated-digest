@@ -1,10 +1,10 @@
-# curated-digest
+# Heads Up
 
 ## What it is
 
-curated-digest watches the feeds you care about (RSS, release notes, subreddits), has an AI model pick out what's actually worth your time, and sends it to Telegram as a short digest. You describe what matters in plain language, and it runs on a schedule.
+Heads Up watches the feeds you care about (RSS, release notes, subreddits), has an AI model pick out what's worth your time, and sends it to Telegram as a short digest. It runs on a schedule.
 
-On quiet days, it doesn't message you at all.
+You describe what matters in plain language, like "Tell me when a tool I use ships a breaking change or a security fix."
 
 **Features.**
 - Watches RSS/Atom feeds and subreddits.
