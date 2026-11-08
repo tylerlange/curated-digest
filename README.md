@@ -1,7 +1,9 @@
 # curated-digest
 
-A scheduled pipeline that watches feeds, has a model judge what is worth your attention against criteria you write, and sends a short Telegram digest, or nothing when nothing qualifies.
-It treats every fetched item and every model reply as hostile, and it cannot fail quietly.
+Following many feeds means wading through noise for the few items that matter.
+curated-digest reads them on a schedule, has a model judge each item against criteria you write, and sends a short Telegram digest of only what qualifies, or nothing at all.
+
+It's built so the AI can be wrong without doing damage. It treats every fetched item and every model reply as hostile, the judging model has no tools, files or network, and the pipeline cannot fail quietly.
 
 ## Quickstart
 
