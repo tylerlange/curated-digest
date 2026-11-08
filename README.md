@@ -2,9 +2,9 @@
 
 ## What it is
 
-**Problem.** Following many feeds means skimming noise for the few items that matter.
+curated-digest watches the feeds you care about (RSS, release notes, subreddits), has an AI model pick out what's actually worth your time, and sends it to Telegram as a short digest. You describe what matters in plain language, and it runs on a schedule.
 
-**Solution.** Describe what matters in plain language. On a schedule, an AI model judges new items and sends a short Telegram digest, or nothing.
+On quiet days, it doesn't message you at all.
 
 **Features.**
 - Watches RSS/Atom feeds and subreddits.
